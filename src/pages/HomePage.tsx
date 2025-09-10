@@ -1,3 +1,19 @@
+import TranslationInterface from '../components/TranslationInterface';
+import TranslationSettings from '../components/TranslationSettings';
+
 export default function HomePage() {
-  return <h1>Home Page</h1>;
+  return (
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        <div className="space-y-8">
+          {/** settings */}
+          <div className="flex justify-end">
+            <TranslationSettings />
+          </div>
+
+          <TranslationInterface />
+        </div>
+      </div>
+    </div>
+  );
 }
