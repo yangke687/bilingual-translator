@@ -91,6 +91,6 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-animate')],
   // important: true, // 确保 Tailwind 样式优先级高于 Radix UI
 };
