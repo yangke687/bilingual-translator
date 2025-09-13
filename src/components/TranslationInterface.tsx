@@ -1,14 +1,16 @@
+import { useTranslate } from '@/hooks/use-translate';
 import { useToast } from '@/lib/ToastContext';
+import { useTranslationStore } from '@/store/translation-store';
 import { Copy, Languages, Loader2 } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Textarea } from '../components/ui/textarea';
 import LanguagesSwapButton from './LanguagesSwapButton';
-import { useTranslationStore } from '@/store/translation-store';
 
 export default function TranslationInterface() {
   const { toast } = useToast();
+  const { translate } = useTranslate();
   const {
     sourceLang,
     targetLang,
@@ -106,7 +108,7 @@ export default function TranslationInterface() {
                   Clear
                 </Button>
                 <Button
-                  onClick={() => null} // todo
+                  onClick={translate}
                   disabled={isTranslating || !sourceText.trim()}
                   className="min-w-[100px]"
                 >

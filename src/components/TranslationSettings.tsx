@@ -1,9 +1,11 @@
 import { translationManager } from '@/lib/translation-apis';
+import { useTranslationStore } from '@/store/translation-store';
 import { CheckCircle, Info, Settings, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Checkbox } from '../components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +17,8 @@ import {
 
 export default function TranslationSettings() {
   const [isOpen, setIsOpen] = useState(false);
-  const availableAPIs = translationManager.getAvailableAPIs(); // todo
+  const availableAPIs = translationManager.getAvailableAPIs();
+  const { currentAPIIndex, setCurrentAPIIndex } = useTranslationStore();
 
   const apiInfo = [
     {
@@ -27,14 +30,23 @@ export default function TranslationSettings() {
       cons: ['每日请求限制', '翻译质量一般'],
       setup: '无需配置，开箱即用',
     },
+    // {
+    //   name: 'LibreTranslate',
+    //   description: '开源免费翻译服务',
+    //   requiresAuth: false,
+    //   isAvailable: availableAPIs.some((api) => api.name === 'LibreTranslate'),
+    //   pros: ['开源免费', '隐私保护', '无请求限制'],
+    //   cons: ['服务稳定性依赖公共实例', '翻译质量中等'],
+    //   setup: '无需配置，开箱即用',
+    // },
     {
-      name: 'LibreTranslate',
-      description: '开源免费翻译服务',
+      name: 'Google Translate',
+      description: 'Google 翻译备用服务（通过公共代理）',
       requiresAuth: false,
-      isAvailable: availableAPIs.some((api) => api.name === 'LibreTranslate'),
-      pros: ['开源免费', '隐私保护', '无请求限制'],
-      cons: ['服务稳定性依赖公共实例', '翻译质量中等'],
-      setup: '无需配置，开箱即用',
+      isAvailable: availableAPIs.some((api) => api.name === 'Google Translate'),
+      pros: ['翻译质量高', '支持语言广泛', '响应速度快'],
+      cons: ['依赖代理服务稳定性', '可能有使用限制'],
+      setup: '无需配置，作为备用服务使用',
     },
   ];
 
@@ -55,7 +67,7 @@ export default function TranslationSettings() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid mt-4 gap-4">
+        <div className="grid mt-4 gap-4" key={currentAPIIndex}>
           <div className="flex items-center gap-2 mb-4">
             <Info className="w-5 h-5 text-blue-500" />
             <span className="text-sm text-muted-foreground">
@@ -63,7 +75,7 @@ export default function TranslationSettings() {
             </span>
           </div>
 
-          {apiInfo.map((api) => (
+          {apiInfo.map((api, idx) => (
             <Card key={api.name} className="relative">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -82,6 +94,15 @@ export default function TranslationSettings() {
                     )}
                     {api.requiresAuth && <Badge variant="outline">需要配置</Badge>}
                   </CardTitle>
+                  <Checkbox
+                    className="border-muted bg-muted text-muted-foreground"
+                    defaultChecked={idx === currentAPIIndex}
+                    onCheckedChange={(checked: boolean) => {
+                      if (checked) {
+                        setCurrentAPIIndex(idx);
+                      }
+                    }}
+                  />
                 </div>
                 <CardDescription>{api.description}</CardDescription>
               </CardHeader>
