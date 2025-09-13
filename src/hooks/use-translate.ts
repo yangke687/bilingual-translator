@@ -11,6 +11,7 @@ export const useTranslate = () => {
     setError,
     currentAPIIndex,
     setTranslatedText,
+    addToHistory,
   } = useTranslationStore();
 
   const { toast } = useToast();
@@ -52,6 +53,19 @@ export const useTranslate = () => {
       }
 
       setTranslatedText(result.translatedText);
+
+      // 新建历史记录
+      const historyItem = {
+        id: Date.now().toString(),
+        sourceText: sourceText.trim(),
+        translatedText: result.translatedText,
+        detailedResult: { words: [] }, // TODO: result.detailedResult,
+        sourceLang,
+        targetLang,
+        timestamp: Date.now(),
+      };
+
+      addToHistory(historyItem);
     } catch (err: any) {
       const errorMessage = err.message || '翻译失败';
       setError(errorMessage);

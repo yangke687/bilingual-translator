@@ -1,3 +1,4 @@
+import { TranslationHistory } from '../components/TranslationHistory';
 import TranslationInterface from '../components/TranslationInterface';
 import TranslationSettings from '../components/TranslationSettings';
 
@@ -12,6 +13,11 @@ export default function HomePage() {
           </div>
 
           <TranslationInterface />
+
+          {/* History Section */}
+          <div className="flex justify-center">
+            <TranslationHistory />
+          </div>
         </div>
       </div>
     </div>
