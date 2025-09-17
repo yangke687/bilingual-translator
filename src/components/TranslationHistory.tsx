@@ -7,7 +7,7 @@ import { useToast } from '@/lib/ToastContext';
 import { type Translation, useTranslationStore } from '@/store/translation-store';
 import { BookOpen, Copy, History, Trash2, Volume2, X } from 'lucide-react';
 import { useState } from 'react';
-// import { DetailedTranslationView } from './DetailedTranslation';
+import { DetailedTranslationView } from './DetailedTranslation';
 
 export const TranslationHistory = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -210,10 +210,10 @@ export const TranslationHistory = () => {
 
                           <CollapsibleContent className="mt-2">
                             <div className="border-t pt-2">
-                              {/* <DetailedTranslationView
+                              <DetailedTranslationView
                                 detailed={translation.detailedResult!}
                                 className="text-xs"
-                              /> */}
+                              />
                             </div>
                           </CollapsibleContent>
                         </Collapsible>

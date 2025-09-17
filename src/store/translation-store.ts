@@ -1,8 +1,21 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
-interface DetailedTranslation {
-  words: string[];
+export interface WordDetail {
+  word: string;
+  phonetic?: string; // 音标
+  phoneticAudio?: string; // 音标mp3
+  partOfSpeech?: string; // 词性
+  definitions: string[]; // 定义/释义
+  examples?: string[]; // 例句
+  synonyms?: string[]; // 同义词
+}
+
+export interface DetailedTranslation {
+  basicTranslation: string; // 基础翻译
+  words: WordDetail[]; // 单词详细信息
+  service: string; // 使用的翻译服务
+  confidence?: number; // 置信度
 }
 
 export interface Translation {

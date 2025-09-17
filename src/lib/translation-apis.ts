@@ -1,3 +1,6 @@
+import { type DetailedTranslation } from '../store/translation-store';
+import { DictionaryManager } from './dictionary-apis';
+
 export interface TranslationAPI {
   name: string;
   translate: (text: string, from: string, to: string) => Promise<string>;
@@ -144,14 +147,63 @@ export class TranslationManager {
     try {
       const translatedText = await api.translate(text, from, to);
 
+      // 获取详细翻译信息（音标、词性等）
+      const detailedResult = await this.getDetailedTranslation(
+        text,
+        translatedText,
+        from,
+        to,
+        api.name,
+      );
+
       return {
         translatedText,
+        detailedResult,
         service: api.name,
       };
     } catch (error) {
       console.warn(`${api.name} 翻译失败:`, error);
 
       throw new Error('未知错误');
+    }
+  }
+
+  async getDetailedTranslation(
+    sourceText: string,
+    translatedText: string,
+    from: string,
+    to: string,
+    serviceName: string,
+  ): Promise<DetailedTranslation> {
+    try {
+      // 判断是否为单词或短语（较短的文本才获取详细信息）
+      const isShortText = sourceText.trim().split(/\s+/).length <= 3 && sourceText.length <= 50;
+
+      if (!isShortText) {
+        return {
+          basicTranslation: translatedText,
+          words: [],
+          service: serviceName,
+        };
+      }
+
+      // 获取源语言词汇详细信息
+      const sourceWords = await DictionaryManager.getTextDetails(sourceText, from as 'en' | 'zh');
+
+      return {
+        basicTranslation: translatedText,
+        words: sourceWords,
+        service: serviceName,
+      };
+    } catch (error) {
+      console.warn('获取详细翻译信息失败:', error);
+
+      // 失败时返回基础翻译结果
+      return {
+        basicTranslation: translatedText,
+        words: [],
+        service: serviceName,
+      };
     }
   }
 }

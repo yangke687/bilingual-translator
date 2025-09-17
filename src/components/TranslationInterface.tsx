@@ -1,7 +1,10 @@
+import { DetailedTranslationView } from '@/components/DetailedTranslation';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useTranslate } from '@/hooks/use-translate';
 import { useToast } from '@/lib/ToastContext';
 import { useTranslationStore } from '@/store/translation-store';
-import { Copy, Languages, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Languages, Loader2, Volume2 } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -19,8 +22,19 @@ export default function TranslationInterface() {
     isTranslating,
     setSourceText,
     clearAll,
+    history,
   } = useTranslationStore();
 
+  // 获取最新的翻译详情
+  const [showDetails, setShowDetails] = useState(false);
+  const latestTranslation = history[0];
+  const hasDetailedInfo =
+    latestTranslation?.detailedResult &&
+    latestTranslation.detailedResult.words.length > 0 &&
+    latestTranslation.sourceText === sourceText &&
+    latestTranslation.translatedText === translatedText;
+
+  //
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -174,6 +188,39 @@ export default function TranslationInterface() {
           </CardContent>
         </Card>
       </div>
+
+      {hasDetailedInfo && (
+        <Card className="w-full">
+          <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Volume2 className="w-5 h-5 text-blue-600" />
+                    <CardTitle className="text-lg">词汇详细信息</CardTitle>
+                    <Badge variant="secondary" className="text-xs">
+                      {latestTranslation.detailedResult?.words.length} 个词汇
+                    </Badge>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    {showDetails ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <DetailedTranslationView detailed={latestTranslation.detailedResult!} />
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      )}
     </div>
   );
 }

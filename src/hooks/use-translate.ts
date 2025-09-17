@@ -59,7 +59,7 @@ export const useTranslate = () => {
         id: Date.now().toString(),
         sourceText: sourceText.trim(),
         translatedText: result.translatedText,
-        detailedResult: { words: [] }, // TODO: result.detailedResult,
+        detailedResult: result.detailedResult,
         sourceLang,
         targetLang,
         timestamp: Date.now(),
