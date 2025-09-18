@@ -3,6 +3,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import './App.css';
 import Toaster from './components/Toaster';
 import { ToastProvider } from './lib/ToastContext';
+import { AuthProvier } from './lib/auth-context';
 import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -15,7 +16,9 @@ function App() {
   return (
     <Tooltip.Provider>
       <ToastProvider>
-        <RouterProvider router={router} />
+        <AuthProvier>
+          <RouterProvider router={router} />
+        </AuthProvier>
         <Toaster />
       </ToastProvider>
     </Tooltip.Provider>
