@@ -1,3 +1,4 @@
+import LoginButton from '@/components/LoginButton';
 import { TranslationHistory } from '../components/TranslationHistory';
 import TranslationInterface from '../components/TranslationInterface';
 import TranslationSettings from '../components/TranslationSettings';
@@ -9,7 +10,10 @@ export default function HomePage() {
         <div className="space-y-8">
           {/** settings */}
           <div className="flex justify-end">
-            <TranslationSettings />
+            <div className="flex gap-1">
+              <TranslationSettings />
+              <LoginButton />
+            </div>
           </div>
 
           <TranslationInterface />
