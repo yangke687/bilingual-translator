@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import google from '@/assets/google.svg';
 import { useAuth } from '@/lib/auth-context';
@@ -20,7 +21,9 @@ export default () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem>生词本</DropdownMenuItem>
+        <Link to="/vocab">
+          <DropdownMenuItem>生词本</DropdownMenuItem>
+        </Link>
         <DropdownMenuItem onClick={logout}>退出</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
