@@ -11,7 +11,7 @@ import NotFoundPage from './pages/NotFoundPage';
 function App() {
   const router = createBrowserRouter([
     { path: '/', element: <HomePage /> },
-    { path: '/vocab', element: <VocabPage /> },
+    { path: '/vocab/:category?', element: <VocabPage /> },
     { path: '*', element: <NotFoundPage /> },
   ]);
 

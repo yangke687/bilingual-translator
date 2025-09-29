@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import { useVocabStore } from '@/store/vocab-store';
 import { useVocab } from '@/hooks/use-vocab';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
+import { Checkbox } from './ui/checkbox';
 
 const VocabularyCategories = () => {
   const {
@@ -30,6 +32,9 @@ const VocabularyCategories = () => {
     // updateCategory,
     // getWordsCountByCategory
   } = useVocabStore();
+
+  const navigate = useNavigate();
+  const { category: activeCategory } = useParams<{ category: string }>();
 
   const { getCategories, addCategory } = useVocab();
   const { user } = useAuth();
@@ -121,7 +126,7 @@ const VocabularyCategories = () => {
                 'w-full justify-start h-auto p-3 text-left',
                 selectedCategory === null && 'bg-primary/10 text-primary',
               )}
-              onClick={() => setSelectedCategory('')}
+              //onClick={() => setSelectedCategory('')}
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
@@ -168,17 +173,26 @@ const VocabularyCategories = () => {
                   </div>
                 ) : (
                   <Button
-                    variant={selectedCategory === category.id ? 'secondary' : 'ghost'}
+                    // variant={activeCategory === category.id ? 'secondary' : 'ghost'}
+                    variant={'ghost'}
                     className={cn(
                       'w-full justify-start h-auto p-3 text-left relative',
-                      selectedCategory === category.id && 'bg-primary/10 text-primary',
+                      activeCategory === category.id && 'bg-primary/10 text-primary',
                     )}
                     asChild
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => navigate(`/vocab/${category.id}`)}
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2">
-                        <FolderOpen className="w-4 h-4" />
+                        {/**<FolderOpen className="w-4 h-4" />**/}
+                        <Checkbox
+                          checked={selectedCategory === category.id}
+                          onCheckedChange={(checked: boolean) => {
+                            if (checked) {
+                              setSelectedCategory(category.id);
+                            }
+                          }}
+                        />
                         <span className="truncate">{category.name}</span>
                       </div>
                       <div className="flex items-center gap-2">

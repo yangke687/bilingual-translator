@@ -1,8 +1,14 @@
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { type DetailedTranslation, type WordDetail } from '@/store/translation-store';
-import { BookOpen, Quote, Users, Volume2 } from 'lucide-react';
+import { useVocab } from '@/hooks/use-vocab';
+import {
+  useTranslationStore,
+  type DetailedTranslation,
+  type WordDetail,
+} from '@/store/translation-store';
+import { BookOpen, Quote, Users, Volume2, Star } from 'lucide-react';
 import React from 'react';
 
 interface DetailedTranslationProps {
@@ -11,6 +17,16 @@ interface DetailedTranslationProps {
 }
 
 const WordDetailCard: React.FC<{ word: WordDetail }> = ({ word }) => {
+  const { sourceLang, targetLang, translatedText } = useTranslationStore();
+  const { addWord, hasWord } = useVocab();
+  const [isFavor, setIsFavor] = useState(false);
+
+  useEffect(() => {
+    if (word && word.word) {
+      hasWord(word.word).then((res) => setIsFavor(res));
+    }
+  }, [word]);
+
   return (
     <Card className="mb-4">
       <CardHeader className="pb-3">
@@ -35,6 +51,20 @@ const WordDetailCard: React.FC<{ word: WordDetail }> = ({ word }) => {
                 )}
                 <span className="font-mono">{word.phonetic}</span>
               </div>
+            )}
+            {/** 添加到生词本 */}
+            {isFavor ? (
+              <Star className="w-4 h-4  fill-current text-yellow-500" />
+            ) : (
+              <Star
+                className="w-4 h-4 cursor-pointer"
+                onClick={async () => {
+                  try {
+                    await addWord({ ...word, sourceLang, targetLang, translatedText });
+                    setIsFavor(true);
+                  } catch {}
+                }}
+              />
             )}
           </div>
         </div>
