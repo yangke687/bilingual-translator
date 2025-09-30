@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { Checkbox } from './ui/checkbox';
 
-const VocabularyCategories = () => {
+const VocabularyCategories = ({ onLoad }: { onLoad: (category?: string) => void }) => {
   const {
     categories,
     selectedCategory,
@@ -124,9 +124,12 @@ const VocabularyCategories = () => {
               variant={selectedCategory === null ? 'secondary' : 'ghost'}
               className={cn(
                 'w-full justify-start h-auto p-3 text-left',
-                selectedCategory === null && 'bg-primary/10 text-primary',
+                !activeCategory && 'bg-primary/10 text-primary',
               )}
-              //onClick={() => setSelectedCategory('')}
+              onClick={() => {
+                navigate('/vocab');
+                onLoad();
+              }}
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
@@ -180,7 +183,10 @@ const VocabularyCategories = () => {
                       activeCategory === category.id && 'bg-primary/10 text-primary',
                     )}
                     asChild
-                    onClick={() => navigate(`/vocab/${category.id}`)}
+                    onClick={() => {
+                      navigate(`/vocab/${category.id}`);
+                      onLoad(category.id);
+                    }}
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2">

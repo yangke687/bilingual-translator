@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -10,6 +11,8 @@ import {
 } from '@/store/translation-store';
 import { BookOpen, Quote, Users, Volume2, Star } from 'lucide-react';
 import React from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { type Word } from '@/store/vocab-store';
 
 interface DetailedTranslationProps {
   detailed: DetailedTranslation;
@@ -18,14 +21,17 @@ interface DetailedTranslationProps {
 
 const WordDetailCard: React.FC<{ word: WordDetail }> = ({ word }) => {
   const { sourceLang, targetLang, translatedText } = useTranslationStore();
+  const { user } = useAuth();
   const { addWord, hasWord } = useVocab();
-  const [isFavor, setIsFavor] = useState(false);
+  const [isFavor, setIsFavor] = useState<Partial<Word> | null>(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (word && word.word) {
+    if (user && word && word.word) {
       hasWord(word.word).then((res) => setIsFavor(res));
     }
-  }, [word]);
+  }, [word, user]);
 
   return (
     <Card className="mb-4">
@@ -53,19 +59,24 @@ const WordDetailCard: React.FC<{ word: WordDetail }> = ({ word }) => {
               </div>
             )}
             {/** 添加到生词本 */}
-            {isFavor ? (
-              <Star className="w-4 h-4  fill-current text-yellow-500" />
-            ) : (
-              <Star
-                className="w-4 h-4 cursor-pointer"
-                onClick={async () => {
-                  try {
-                    await addWord({ ...word, sourceLang, targetLang, translatedText });
-                    setIsFavor(true);
-                  } catch {}
-                }}
-              />
-            )}
+            {user &&
+              (isFavor ? (
+                <Star
+                  className="w-4 h-4  fill-current text-yellow-500 cursor-pointer"
+                  onClick={() => navigate(`/vocab/${isFavor!.category}/${isFavor!.word}`)}
+                />
+              ) : (
+                <Star
+                  className="w-4 h-4 cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      const _word = { ...word, sourceLang, targetLang, translatedText };
+                      await addWord(_word);
+                      setIsFavor(_word);
+                    } catch {}
+                  }}
+                />
+              ))}
           </div>
         </div>
       </CardHeader>
