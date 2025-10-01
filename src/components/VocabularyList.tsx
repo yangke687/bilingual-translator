@@ -6,31 +6,44 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Search,
   BookOpen,
+  FileText,
   Volume2,
   Trash2,
   Edit3,
   SortAsc,
   SortDesc,
+  Save,
   Calendar,
   Hash,
   Copy,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { useVocab } from '@/hooks/use-vocab';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 
 const VocabularyList = ({ category }: { category?: string }) => {
-  const { words, isWordsLoading, categories, hasMore } = useVocabStore();
+  const {
+    words,
+    isWordsLoading,
+    categories,
+    hasMore,
+    sortField,
+    sortDirection,
+    setSortField,
+    setSortDirection,
+  } = useVocabStore();
   const { scrollLoadwords, loadWords } = useVocab();
-
-  //console.log(category, words, isWordsLoading);
 
   const { word } = useParams<{ word: string }>();
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'date' | 'alphabetical' | 'frequency'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  // const [sortBy, setSortBy] = useState<'createdAt' | 'word'>('createdAt');
+  // const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const loaderRef = useRef(null);
@@ -68,6 +81,11 @@ const VocabularyList = ({ category }: { category?: string }) => {
     setSearchTerm(word || '');
   }, [word]);
 
+  // 排序
+  useEffect(() => {
+    loadWords(category, searchTerm);
+  }, [sortField, sortDirection]);
+
   // 下拉监听
   useEffect(() => {
     if (!loaderRef.current) {
@@ -83,6 +101,26 @@ const VocabularyList = ({ category }: { category?: string }) => {
     observer.observe(loaderRef.current);
     return () => observer.disconnect();
   }, [scrollLoadwords, hasMore, isWordsLoading]);
+
+  // 编辑"备注"
+  const [editingNotes, setEditingNotes] = useState<string | null>(null);
+  const [notesText, setNotesText] = useState('');
+
+  const handleEditNotes = (wordId: string, currentNotes?: string) => {
+    setEditingNotes(wordId);
+    setNotesText(currentNotes || '');
+  };
+
+  const handleSaveNotes = (wordId: string) => {
+    // updateWord(wordId, { notes: notesText.trim() || undefined });
+    setEditingNotes(null);
+    setNotesText('');
+  };
+
+  const handleCancelEditNotes = () => {
+    setEditingNotes(null);
+    setNotesText('');
+  };
 
   return (
     <div className="flex flex-col h-[calc(100%_-_70px)]">
@@ -100,18 +138,18 @@ const VocabularyList = ({ category }: { category?: string }) => {
           {/* 排序和筛选按钮 */}
           <div className="flex items-center gap-2">
             <Button
-              variant={sortBy === 'date' ? 'default' : 'outline'}
+              variant={sortField === 'createdAt' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setSortBy('date')}
+              onClick={() => setSortField('createdAt')}
               className="gap-2"
             >
               <Calendar className="w-4 h-4" />
               时间
             </Button>
             <Button
-              variant={sortBy === 'alphabetical' ? 'default' : 'outline'}
+              variant={sortField === 'word' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setSortBy('alphabetical')}
+              onClick={() => setSortField('word')}
               className="gap-2"
             >
               <Hash className="w-4 h-4" />
@@ -120,10 +158,10 @@ const VocabularyList = ({ category }: { category?: string }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
               className="gap-2"
             >
-              {sortOrder === 'asc' ? (
+              {sortDirection === 'asc' ? (
                 <SortAsc className="w-4 h-4" />
               ) : (
                 <SortDesc className="w-4 h-4" />
@@ -239,9 +277,109 @@ const VocabularyList = ({ category }: { category?: string }) => {
                         {/* 词汇详情 */}
                         <div className="text-sm text-muted-foreground space-y-1 mb-3">
                           {word.phonetic && <div>音标: {word.phonetic}</div>}
-                          {word.partOfSpeech && <div>词性: {word.partOfSpeech}</div>}
+                          {word.partOfSpeech && (
+                            <div>
+                              词性:{' '}
+                              {Array.isArray(word.partOfSpeech) ? (
+                                word.partOfSpeech.map((partOfSpeech) => (
+                                  <Badge variant="outline" className="text-xs" key={partOfSpeech}>
+                                    {partOfSpeech}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs"
+                                  key={word.partOfSpeech}
+                                >
+                                  {word.partOfSpeech}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
                           {word.definitions && word.definitions.length > 0 && (
-                            <div>定义: {word.definitions.slice(0, 2).join('; ')}</div>
+                            <div>
+                              定义:
+                              <ul className="space-y-1 ml-6">
+                                {word.definitions.map((definition, index) => (
+                                  <li key={index} className="text-sm text-gray-800 leading-relaxed">
+                                    • {definition}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 备注区域 */}
+                        <div className="mb-3">
+                          {editingNotes === word.id ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <FileText className="w-4 h-4" />
+                                编辑备注
+                              </div>
+                              <Textarea
+                                value={notesText}
+                                onChange={(e) => setNotesText(e.target.value)}
+                                placeholder="添加个人备注，如记忆技巧、使用场景等..."
+                                className="min-h-[80px] text-sm"
+                                autoFocus
+                              />
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveNotes(word.id)}
+                                  className="h-7 px-3 text-xs"
+                                >
+                                  <Save className="w-3 h-3 mr-1" />
+                                  保存
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleCancelEditNotes}
+                                  className="h-7 px-3 text-xs"
+                                >
+                                  <X className="w-3 h-3 mr-1" />
+                                  取消
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {word.notes ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      备注
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="w-4 h-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => handleEditNotes(word.id, word.notes)}
+                                    >
+                                      <Edit3 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                  <div className="text-sm text-foreground bg-muted/30 rounded-md p-2 border-l-2 border-primary/20">
+                                    {word.notes}
+                                  </div>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleEditNotes(word.id)}
+                                >
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  添加备注
+                                </Button>
+                              )}
+                            </>
                           )}
                         </div>
 
@@ -249,7 +387,7 @@ const VocabularyList = ({ category }: { category?: string }) => {
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {word.createdAt.toString()}
+                            {format(new Date(word.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}
                           </div>
                         </div>
                       </div>
@@ -271,9 +409,9 @@ const VocabularyList = ({ category }: { category?: string }) => {
                             <StarOff className="w-4 h-4" />
                           )}
                         </Button> */}
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        {/* <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <Edit3 className="w-4 h-4" />
-                        </Button>
+                        </Button> */}
                         <Button
                           variant="ghost"
                           size="sm"

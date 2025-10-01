@@ -18,7 +18,11 @@ export type Word = WordDetail & {
   id: string;
   createdAt: string;
   category: string;
+  notes?: string;
 };
+
+export type SortFieldType = 'createdAt' | 'word';
+export type SortDirectionType = 'asc' | 'desc';
 
 export interface VocabStore {
   categories: Category[];
@@ -32,11 +36,15 @@ export interface VocabStore {
 
   words: Word[];
   lastDoc: DocumentSnapshot | null;
+  sortField: SortFieldType;
+  sortDirection: SortDirectionType;
   isWordsLoading: boolean;
   hasMore: boolean;
 
   setWords: (words: Word[]) => void;
   setLastDoc: (lastDoc: DocumentSnapshot | null) => void;
+  setSortField: (sortField: SortFieldType) => void;
+  setSortDirection: (sortDirection: SortDirectionType) => void;
   setIsWordsLoading: (isWordsLoding: boolean) => void;
   setHasMore: (hasMore: boolean) => void;
 
@@ -61,9 +69,13 @@ export const useVocabStore = create<VocabStore>()(
 
       words: [],
       lastDoc: null,
+      sortField: 'createdAt',
+      sortDirection: 'desc',
       hasMore: false,
       setWords: (words: Word[]) => set({ words }),
       setLastDoc: (lastDoc: DocumentSnapshot | null) => set({ lastDoc }),
+      setSortField: (sortField: SortFieldType) => set({ sortField }),
+      setSortDirection: (sortDirection: SortDirectionType) => set({ sortDirection }),
       setIsWordsLoading: (isWordsLoading: boolean) => set({ isWordsLoading }),
       setHasMore: (hasMore: boolean) => set({ hasMore }),
 

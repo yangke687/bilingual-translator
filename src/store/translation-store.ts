@@ -5,7 +5,7 @@ export interface WordDetail {
   word: string;
   phonetic?: string; // 音标
   phoneticAudio?: string; // 音标mp3
-  partOfSpeech?: string; // 词性
+  partOfSpeech?: string[]; // 词性
   definitions: string[]; // 定义/释义
   examples?: string[]; // 例句
   synonyms?: string[]; // 同义词

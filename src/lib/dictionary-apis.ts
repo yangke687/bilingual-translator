@@ -25,6 +25,7 @@ export class FreeDictionaryAPI {
         word: entry.word || word,
         phonetic: this.extractPhonetic(entry),
         phoneticAudio: this.extractPhoneticAudio(entry),
+        partOfSpeech: [],
         definitions: [],
         examples: [],
         synonyms: [],
@@ -44,8 +45,8 @@ export class FreeDictionaryAPI {
               wordDetail.definitions.push(defText);
 
               // 设置主要词性
-              if (!wordDetail.partOfSpeech && partOfSpeech) {
-                wordDetail.partOfSpeech = partOfSpeech;
+              if (partOfSpeech && !wordDetail.partOfSpeech?.includes(partOfSpeech)) {
+                wordDetail.partOfSpeech?.push(partOfSpeech);
               }
 
               // 添加例句
@@ -63,7 +64,19 @@ export class FreeDictionaryAPI {
       }
 
       // 限制数量避免界面过于冗长
-      wordDetail.definitions = wordDetail.definitions.slice(0, 3);
+      // wordDetail.definitions = wordDetail.definitions; //.slice(0, 3);
+      const __definitions: string[] = [];
+
+      wordDetail.partOfSpeech?.forEach((p: string) => {
+        const d = wordDetail.definitions.filter((d) => d.indexOf(`(${p})`) == 0);
+        if (d.length > 1) {
+          __definitions.push(d[0]);
+          __definitions.push(d[1]);
+        } else if (d.length > 0) {
+          __definitions.push(d[0]);
+        }
+      });
+      wordDetail.definitions = __definitions;
       wordDetail.examples = wordDetail.examples?.slice(0, 2);
       wordDetail.synonyms = wordDetail.synonyms?.slice(0, 3);
 

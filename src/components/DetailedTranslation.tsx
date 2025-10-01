@@ -39,11 +39,12 @@ const WordDetailCard: React.FC<{ word: WordDetail }> = ({ word }) => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold text-blue-700">{word.word}</CardTitle>
           <div className="flex items-center gap-2">
-            {word.partOfSpeech && (
-              <Badge variant="outline" className="text-xs">
-                {word.partOfSpeech}
-              </Badge>
-            )}
+            {word.partOfSpeech &&
+              word.partOfSpeech.map((partOfSpeech) => (
+                <Badge variant="outline" className="text-xs" key={partOfSpeech}>
+                  {partOfSpeech}
+                </Badge>
+              ))}
             {word.phonetic && (
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 {word.phoneticAudio && (

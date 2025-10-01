@@ -49,12 +49,16 @@ export const fb_loadWords = async ({
   searchWord,
   pageSize,
   lastDoc,
+  sortField = 'createdAt',
+  sortDirection = 'desc',
 }: {
   uid: string;
   category?: string;
   searchWord?: string;
   pageSize: number;
   lastDoc: DocumentSnapshot | null;
+  sortField?: 'createdAt' | 'word';
+  sortDirection?: 'asc' | 'desc';
 }) => {
   let q = collection(db, 'users', uid, 'vocab');
 
@@ -70,7 +74,7 @@ export const fb_loadWords = async ({
   }
 
   // query
-  let queryRef = query(q, ...conditions, orderBy('createdAt', 'desc'), limit(pageSize));
+  let queryRef = query(q, ...conditions, orderBy(sortField, sortDirection), limit(pageSize));
 
   if (lastDoc) {
     queryRef = query(queryRef, startAfter(lastDoc));
@@ -106,6 +110,8 @@ export const useVocab = () => {
     setLastDoc,
     setIsWordsLoading,
     lastDoc,
+    sortField,
+    sortDirection,
     setHasMore,
   } = useVocabStore();
   const { toast } = useToast();
@@ -178,6 +184,8 @@ export const useVocab = () => {
       searchWord,
       pageSize: 5,
       lastDoc: null,
+      sortField,
+      sortDirection,
     });
 
     setWords(newWords);
@@ -194,6 +202,8 @@ export const useVocab = () => {
       searchWord,
       pageSize: 5,
       lastDoc,
+      sortField,
+      sortDirection,
     });
 
     setWords([...words, ...newWords]);
