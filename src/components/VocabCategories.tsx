@@ -15,6 +15,17 @@ import {
   X,
   Loader2,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  // AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useVocabStore } from '@/store/vocab-store';
 import { useVocab } from '@/hooks/use-vocab';
 import { cn } from '@/lib/utils';
@@ -27,21 +38,20 @@ const VocabularyCategories = ({ onLoad }: { onLoad: (category?: string) => void 
     selectedCategory,
     setSelectedCategory,
     isCategoriesLoading,
-    // addCategory,
+    totalWordsCnt,
     // deleteCategory,
-    // updateCategory,
-    // getWordsCountByCategory
   } = useVocabStore();
 
   const navigate = useNavigate();
   const { category: activeCategory } = useParams<{ category: string }>();
 
-  const { getCategories, addCategory } = useVocab();
+  const { getCategories, addCategory, loadTotalWordsCnt, updateCategory, delCategory } = useVocab();
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
       getCategories();
+      loadTotalWordsCnt();
     }
   }, [user]);
 
@@ -65,14 +75,10 @@ const VocabularyCategories = ({ onLoad }: { onLoad: (category?: string) => void 
 
   const handleUpdateCategory = (categoryId: string) => {
     if (editCategoryName.trim()) {
-      // updateCategory(categoryId, editCategoryName.trim());
+      updateCategory(categoryId, editCategoryName.trim());
       setEditingCategory(null);
       setEditCategoryName('');
     }
-  };
-
-  const handleDeleteCategory = (categoryId: string) => {
-    // deleteCategory(categoryId);
   };
 
   const startEditing = (category: { id: string; name: string }) => {
@@ -83,6 +89,30 @@ const VocabularyCategories = ({ onLoad }: { onLoad: (category?: string) => void 
   const cancelEditing = () => {
     setEditingCategory(null);
     setEditCategoryName('');
+  };
+
+  // 删除分类
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; text: string } | null>(
+    null,
+  );
+
+  const handleDeleteClick = (catId: string, catText: string) => {
+    setCategoryToDelete({ id: catId, text: catText });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (categoryToDelete) {
+      delCategory(categoryToDelete.id);
+      setDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setCategoryToDelete(null);
   };
 
   return (
@@ -137,7 +167,7 @@ const VocabularyCategories = ({ onLoad }: { onLoad: (category?: string) => void 
                   <span>全部生词</span>
                 </div>
                 <Badge variant="secondary" className="text-xs">
-                  0{/**getWordsCountByCategory(null)*/}
+                  {totalWordsCnt}
                 </Badge>
               </div>
             </Button>
@@ -202,9 +232,9 @@ const VocabularyCategories = ({ onLoad }: { onLoad: (category?: string) => void 
                         <span className="truncate">{category.name}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          0{/** getWordsCountByCategory(category.id)*/}
-                        </Badge>
+                        {/* <Badge variant="secondary" className="text-xs">
+                          {category.wordCount}
+                        </Badge> */}
 
                         {/* 操作按钮 */}
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
@@ -225,7 +255,7 @@ const VocabularyCategories = ({ onLoad }: { onLoad: (category?: string) => void 
                             className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteCategory(category.id);
+                              handleDeleteClick(category.id, category.name);
                             }}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -284,6 +314,27 @@ const VocabularyCategories = ({ onLoad }: { onLoad: (category?: string) => void 
           </div>
         </ScrollArea>
       )}
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除分类</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除分类 <b>{categoryToDelete?.text}</b> 吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

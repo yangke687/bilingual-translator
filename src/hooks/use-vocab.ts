@@ -12,7 +12,11 @@ import {
   where,
   startAfter,
   limit,
+  getCountFromServer,
+  updateDoc,
+  deleteDoc,
   type DocumentSnapshot,
+  writeBatch,
 } from 'firebase/firestore';
 import { type Category } from '@/store/vocab-store';
 import { useToast } from '@/lib/ToastContext';
@@ -22,6 +26,7 @@ const db = getFireDb();
 export const fb_loadCategories = async (uid: string) => {
   const q = await query(collection(db, 'users', uid, 'categories'), orderBy('createdAt', 'desc'));
   const snap = await getDocs(q);
+
   return snap.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }))
     .map((item) => ({
@@ -41,6 +46,19 @@ export const fb_addCategory = async (
     createdAt: new Date(),
   });
   return categoryId;
+};
+
+export const fb_loadTotalWordsCnt = async (uid: string, category?: string) => {
+  const q = collection(db, 'users', uid, 'vocab');
+  let queryRef = query(q);
+
+  if (category) {
+    queryRef = query(queryRef, where('category', '==', category));
+  }
+
+  const cntSnap = await getCountFromServer(queryRef);
+
+  return cntSnap.data().count;
 };
 
 export const fb_loadWords = async ({
@@ -113,6 +131,9 @@ export const useVocab = () => {
     sortField,
     sortDirection,
     setHasMore,
+    setTotalwordsCnt,
+    updateWord: localUpdateWord,
+    delWord: localDelWord,
   } = useVocabStore();
   const { toast } = useToast();
 
@@ -137,6 +158,33 @@ export const useVocab = () => {
     } as Category);
   };
 
+  const updateCategory = async (categoryId: string, name: string) => {
+    await updateDoc(doc(db, 'users', user!.uid, 'categories', categoryId), { name });
+    await getCategories();
+  };
+
+  const delCategory = async (categoryId: string) => {
+    const vocabRef = collection(db, 'users', user!.uid, 'vocab');
+    const q = query(vocabRef, where('category', '==', categoryId));
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      toast({
+        variant: 'destructive',
+        title: '错误!',
+        description: '该分类下仍有单词，请先删除或移动单词后再删除分类',
+      });
+      throw new Error('Failed');
+    }
+
+    const categoryRef = doc(db, 'users', user!.uid, 'categories', categoryId);
+    await deleteDoc(categoryRef);
+    await getCategories();
+  };
+
+  // 加载总生词数
+  const loadTotalWordsCnt = async () => setTotalwordsCnt(await fb_loadTotalWordsCnt(user!.uid));
+
   const hasWord = async (word: string) => {
     const wordId = word.toLowerCase();
     const docRef = doc(db, 'users', user!.uid, 'vocab', wordId);
@@ -151,6 +199,7 @@ export const useVocab = () => {
 
     if (!selectedCategory) {
       return toast({
+        variant: 'destructive',
         title: 'Error!',
         description: 'No default vocabulary category selected',
       });
@@ -167,8 +216,27 @@ export const useVocab = () => {
     });
 
     toast({
-      title: 'Success!',
-      description: 'Vocabulary added',
+      title: '成功!',
+      description: '生词已收录',
+    });
+  };
+
+  // 生词添加 "备注"
+  const updateWord = async (wordId: string, notes: string) => {
+    const wordRef = await doc(db, 'users', user!.uid, 'vocab', wordId);
+    await updateDoc(wordRef, { notes });
+    localUpdateWord(wordId, { notes });
+  };
+
+  // 删除生词
+  const delWord = async (wordId: string) => {
+    const wordRef = doc(db, 'users', user!.uid, 'vocab', wordId);
+    await deleteDoc(wordRef);
+    localDelWord(wordId);
+
+    toast({
+      title: '成功!',
+      description: '生词已移除',
     });
   };
 
@@ -215,8 +283,13 @@ export const useVocab = () => {
   return {
     getCategories,
     addCategory,
+    updateCategory,
+    delCategory,
+    loadTotalWordsCnt,
     hasWord,
     addWord,
+    updateWord,
+    delWord,
     loadWords,
     scrollLoadwords,
   };

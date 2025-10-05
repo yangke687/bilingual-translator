@@ -8,6 +8,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  // AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Search,
   BookOpen,
   FileText,
@@ -23,9 +34,10 @@ import {
   CheckCircle2,
   X,
 } from 'lucide-react';
-import { useVocab } from '@/hooks/use-vocab';
+import { useVocab, fb_loadTotalWordsCnt } from '@/hooks/use-vocab';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { useAuth } from '@/lib/auth-context';
 
 const VocabularyList = ({ category }: { category?: string }) => {
   const {
@@ -37,16 +49,17 @@ const VocabularyList = ({ category }: { category?: string }) => {
     sortDirection,
     setSortField,
     setSortDirection,
+    totalWordsCnt: localTotalWordsCnt,
   } = useVocabStore();
-  const { scrollLoadwords, loadWords } = useVocab();
+  const { scrollLoadwords, loadWords, updateWord, delWord } = useVocab();
 
   const { word } = useParams<{ word: string }>();
   const [searchTerm, setSearchTerm] = useState<string>('');
-  // const [sortBy, setSortBy] = useState<'createdAt' | 'word'>('createdAt');
-  // const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [totalWordsCnt, setTotalWordscnt] = useState(0); // 分类生词数
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const loaderRef = useRef(null);
+  const { user } = useAuth();
 
   const handleCopyText = async (text: string, wordId: string) => {
     try {
@@ -83,8 +96,17 @@ const VocabularyList = ({ category }: { category?: string }) => {
 
   // 排序
   useEffect(() => {
-    loadWords(category, searchTerm);
-  }, [sortField, sortDirection]);
+    if (user) {
+      loadWords(category, searchTerm);
+    }
+  }, [sortField, sortDirection, user]);
+
+  // 加载生词数
+  useEffect(() => {
+    if (user && category) {
+      fb_loadTotalWordsCnt(user.uid, category).then((cnt) => setTotalWordscnt(cnt));
+    }
+  }, [user, category, words]);
 
   // 下拉监听
   useEffect(() => {
@@ -112,7 +134,10 @@ const VocabularyList = ({ category }: { category?: string }) => {
   };
 
   const handleSaveNotes = (wordId: string) => {
-    // updateWord(wordId, { notes: notesText.trim() || undefined });
+    if (notesText.trim()) {
+      updateWord(wordId, notesText.trim());
+    }
+
     setEditingNotes(null);
     setNotesText('');
   };
@@ -120,6 +145,28 @@ const VocabularyList = ({ category }: { category?: string }) => {
   const handleCancelEditNotes = () => {
     setEditingNotes(null);
     setNotesText('');
+  };
+
+  // 删除单词
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [wordToDelete, setWordToDelete] = useState<{ id: string; text: string } | null>(null);
+
+  const handleDeleteClick = (wordId: string, wordText: string) => {
+    setWordToDelete({ id: wordId, text: wordText });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (wordToDelete) {
+      delWord(wordToDelete.id);
+      setDeleteDialogOpen(false);
+      setWordToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setWordToDelete(null);
   };
 
   return (
@@ -131,7 +178,7 @@ const VocabularyList = ({ category }: { category?: string }) => {
             <BookOpen className="w-5 h-5 text-primary" />
             <h1 className="text-xl font-semibold">{getCategoryName(category)}</h1>
             <Badge variant="secondary" className="text-sm">
-              0 个生词
+              {category ? totalWordsCnt : localTotalWordsCnt} 个生词
             </Badge>
           </div>
 
@@ -417,7 +464,7 @@ const VocabularyList = ({ category }: { category?: string }) => {
                           size="sm"
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                           onClick={() => {
-                            // deleteWord(word.id);
+                            handleDeleteClick(word.id, word.word);
                           }}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -439,6 +486,27 @@ const VocabularyList = ({ category }: { category?: string }) => {
           )}
         </div>
       </ScrollArea>
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除生词</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除生词 <b>{wordToDelete?.text}</b> 吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

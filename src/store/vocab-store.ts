@@ -8,6 +8,7 @@ export interface Category {
   id: string;
   name: string;
   description: string;
+  wordCount: number;
   createdAt: string;
 }
 
@@ -35,11 +36,14 @@ export interface VocabStore {
   addCategory: (category: Category) => void;
 
   words: Word[];
+  totalWordsCnt: number;
   lastDoc: DocumentSnapshot | null;
   sortField: SortFieldType;
   sortDirection: SortDirectionType;
   isWordsLoading: boolean;
   hasMore: boolean;
+  updateWord: (wordId: string, updates: Partial<Word>) => void;
+  delWord: (wordId: string) => void;
 
   setWords: (words: Word[]) => void;
   setLastDoc: (lastDoc: DocumentSnapshot | null) => void;
@@ -47,6 +51,7 @@ export interface VocabStore {
   setSortDirection: (sortDirection: SortDirectionType) => void;
   setIsWordsLoading: (isWordsLoding: boolean) => void;
   setHasMore: (hasMore: boolean) => void;
+  setTotalwordsCnt: (totalWordsCnt: number) => void;
 
   init: (uid: String) => void;
 }
@@ -68,6 +73,7 @@ export const useVocabStore = create<VocabStore>()(
         ),
 
       words: [],
+      totalWordsCnt: 0,
       lastDoc: null,
       sortField: 'createdAt',
       sortDirection: 'desc',
@@ -78,6 +84,22 @@ export const useVocabStore = create<VocabStore>()(
       setSortDirection: (sortDirection: SortDirectionType) => set({ sortDirection }),
       setIsWordsLoading: (isWordsLoading: boolean) => set({ isWordsLoading }),
       setHasMore: (hasMore: boolean) => set({ hasMore }),
+      setTotalwordsCnt: (totalWordsCnt: number) => set({ totalWordsCnt }),
+      updateWord: (wordId: string, updates: Partial<Word>) => {
+        const words = get().words;
+        set({
+          words: words.map((word) => (word.id !== wordId ? word : { ...word, ...updates })),
+        });
+      },
+      delWord: (wordId: string) => {
+        const words = get().words;
+        const totalWordsCnt = get().totalWordsCnt;
+
+        set({
+          words: words.filter((word) => word.id !== wordId),
+          totalWordsCnt: totalWordsCnt - 1,
+        });
+      },
 
       init: async (uid: string) => {
         if (get().selectedCategory !== '') {
