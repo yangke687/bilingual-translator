@@ -152,7 +152,6 @@ export class TranslationManager {
         text,
         translatedText,
         from,
-        to,
         api.name,
       );
 
@@ -172,7 +171,6 @@ export class TranslationManager {
     sourceText: string,
     translatedText: string,
     from: string,
-    to: string,
     serviceName: string,
   ): Promise<DetailedTranslation> {
     try {

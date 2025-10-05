@@ -139,7 +139,7 @@ export class DictionaryManager {
   }
 
   // 获取中文词汇详细信息
-  static async getChineseWordDetails(word: string): Promise<WordDetail | null> {
+  static async getChineseWordDetails(/**word: string*/): Promise<WordDetail | null> {
     // 中文词典API暂时未实现
     // 可以集成百度词典或其他中文词典API
     return null;

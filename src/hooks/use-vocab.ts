@@ -16,7 +16,7 @@ import {
   updateDoc,
   deleteDoc,
   type DocumentSnapshot,
-  writeBatch,
+  Timestamp,
 } from 'firebase/firestore';
 import { type Category } from '@/store/vocab-store';
 import { useToast } from '@/lib/ToastContext';
@@ -31,7 +31,7 @@ export const fb_loadCategories = async (uid: string) => {
     .map((doc) => ({ id: doc.id, ...doc.data() }))
     .map((item) => ({
       ...item,
-      createdAt: item.createdAt.toDate().toISOString(),
+      createdAt: (item as { id: string; createdAt: Timestamp }).createdAt.toDate().toISOString(),
     }));
 };
 

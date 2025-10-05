@@ -18,8 +18,8 @@ export const TranslationHistory = () => {
     removeFromHistory,
     setSourceText,
     setTranslatedText,
-    sourceLang,
-    targetLang,
+    // sourceLang,
+    //targetLang,
     setSourceLang,
     setTargetLang,
   } = useTranslationStore();
