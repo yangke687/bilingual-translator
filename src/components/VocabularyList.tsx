@@ -94,7 +94,7 @@ const VocabularyList = ({ category }: { category?: string }) => {
     setSearchTerm(word || '');
   }, [word]);
 
-  // 排序
+  // 首次加载/排序
   useEffect(() => {
     if (user) {
       loadWords(category, searchTerm);
@@ -135,7 +135,7 @@ const VocabularyList = ({ category }: { category?: string }) => {
 
   const handleSaveNotes = (wordId: string) => {
     if (notesText.trim()) {
-      updateWord(wordId, notesText.trim());
+      updateWord(wordId, { notes: notesText.trim() });
     }
 
     setEditingNotes(null);
@@ -150,6 +150,28 @@ const VocabularyList = ({ category }: { category?: string }) => {
   // 删除单词
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [wordToDelete, setWordToDelete] = useState<{ id: string; text: string } | null>(null);
+
+  // 编辑分类
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [editingCategoryWord, setEditingCategoryWord] = useState<{
+    id: string;
+    category: string;
+  } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+
+  const handleEditCategoryClick = (wordId: string, currentCategory: string) => {
+    setEditingCategoryWord({ id: wordId, category: currentCategory });
+    setSelectedCategory(currentCategory);
+    setCategoryDialogOpen(true);
+  };
+
+  const handleConfirmCategoryChange = () => {
+    if (editingCategoryWord) {
+      updateWord(editingCategoryWord.id, { category: selectedCategory });
+      setCategoryDialogOpen(false);
+      setEditingCategoryWord(null);
+    }
+  };
 
   const handleDeleteClick = (wordId: string, wordText: string) => {
     setWordToDelete({ id: wordId, text: wordText });
@@ -323,27 +345,30 @@ const VocabularyList = ({ category }: { category?: string }) => {
 
                         {/* 词汇详情 */}
                         <div className="text-sm text-muted-foreground space-y-1 mb-3">
-                          {word.phonetic && <div>音标: {word.phonetic}</div>}
-                          {word.partOfSpeech && (
-                            <div>
-                              词性:{' '}
-                              {Array.isArray(word.partOfSpeech) ? (
-                                word.partOfSpeech.map((partOfSpeech) => (
-                                  <Badge variant="outline" className="text-xs" key={partOfSpeech}>
-                                    {partOfSpeech}
+                          {/* 水平排列: 音标、词性 */}
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                            {word.phonetic && <div>音标: {word.phonetic}</div>}
+                            {word.partOfSpeech && (
+                              <div className="flex items-center gap-1">
+                                词性:{' '}
+                                {Array.isArray(word.partOfSpeech) ? (
+                                  word.partOfSpeech.map((partOfSpeech) => (
+                                    <Badge variant="outline" className="text-xs" key={partOfSpeech}>
+                                      {partOfSpeech}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs"
+                                    key={word.partOfSpeech}
+                                  >
+                                    {word.partOfSpeech}
                                   </Badge>
-                                ))
-                              ) : (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs"
-                                  key={word.partOfSpeech}
-                                >
-                                  {word.partOfSpeech}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
+                                )}
+                              </div>
+                            )}
+                          </div>
                           {word.definitions && word.definitions.length > 0 && (
                             <div>
                               定义:
@@ -440,7 +465,17 @@ const VocabularyList = ({ category }: { category?: string }) => {
                       </div>
 
                       {/* 操作按钮 */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto px-2 py-0.5 text-xs hover:bg-transparent"
+                          onClick={() => handleEditCategoryClick(word.id, word.category)}
+                        >
+                          <Badge variant="outline" className="text-xs">
+                            {getCategoryName(word.category)}
+                          </Badge>
+                        </Button>
                         {/* <Button
                           variant="ghost"
                           size="sm"
@@ -504,6 +539,39 @@ const VocabularyList = ({ category }: { category?: string }) => {
             >
               确认删除
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 分类选择对话框 */}
+      <AlertDialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>选择分类</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-4">
+            {categories.map((cat) => (
+              <label
+                key={cat.id}
+                className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-accent ${
+                  selectedCategory === cat.id ? 'bg-accent' : ''
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="category"
+                  value={cat.id}
+                  checked={selectedCategory === cat.id}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-4 h-4 text-primary"
+                />
+                <span>{cat.name}</span>
+              </label>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCategoryDialogOpen(false)}>取消</AlertDialogCancel>
+            <Button onClick={handleConfirmCategoryChange}>确认</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

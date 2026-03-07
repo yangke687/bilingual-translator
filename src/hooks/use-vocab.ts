@@ -221,11 +221,11 @@ export const useVocab = () => {
     });
   };
 
-  // 生词添加 "备注"
-  const updateWord = async (wordId: string, notes: string) => {
+  // 生词添加/编辑 "备注" 或更新 "分类"
+  const updateWord = async (wordId: string, updates: { notes?: string; category?: string }) => {
     const wordRef = await doc(db, 'users', user!.uid, 'vocab', wordId);
-    await updateDoc(wordRef, { notes });
-    localUpdateWord(wordId, { notes });
+    await updateDoc(wordRef, updates);
+    localUpdateWord(wordId, updates);
   };
 
   // 删除生词
