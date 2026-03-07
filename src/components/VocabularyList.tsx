@@ -34,7 +34,6 @@ import {
   Copy,
   CheckCircle2,
   X,
-  Play,
   Plus,
   Video,
 } from 'lucide-react';
@@ -42,7 +41,9 @@ import { useVocab, fb_loadTotalWordsCnt } from '@/hooks/use-vocab';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { useAuth } from '@/lib/auth-context';
-import { getYouTubeVideoId, getYouTubeTitle } from '@/lib/utils';
+import { convertToSeconds, formatTime, getYouTubeVideoId, getYouTubeTitle } from '@/lib/utils';
+import { VideoPlayerModal } from '@/components/VideoPlayerModal';
+import { YouTubeIcon } from '@/assets/YouTubeIcon';
 
 const VocabularyList = ({ category }: { category?: string }) => {
   const {
@@ -156,6 +157,10 @@ const VocabularyList = ({ category }: { category?: string }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [wordToDelete, setWordToDelete] = useState<{ id: string; text: string } | null>(null);
 
+  // 删除视频片段
+  const [videoClipDeleteOpen, setVideoClipDeleteOpen] = useState(false);
+  const [videoClipToDelete, setVideoClipToDelete] = useState<{ wordId: string; clipId: string; title: string } | null>(null);
+
   // 编辑分类
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingCategoryWord, setEditingCategoryWord] = useState<{
@@ -185,11 +190,6 @@ const VocabularyList = ({ category }: { category?: string }) => {
   const [videoMinutes, setVideoMinutes] = useState<number>(0);
   const [videoSeconds, setVideoSeconds] = useState<number>(0);
   const [isLoadingTitle, setIsLoadingTitle] = useState(false);
-
-  // 将分和秒转换为总秒数
-  const convertToSeconds = (minutes: number, seconds: number): number => {
-    return minutes * 60 + seconds;
-  };
 
   // 从 URL 提取 YouTube videoId
   const handleAddVideoClipClick = (word: Word) => {
@@ -227,18 +227,31 @@ const VocabularyList = ({ category }: { category?: string }) => {
     setVideoClipWord(null);
   };
 
-  const handleDeleteVideoClip = (wordId: string, clipId: string) => {
-    const word = words.find((w) => w.id === wordId);
+  const handleDeleteVideoClip = (wordId: string, clipId: string, clipTitle: string) => {
+    setVideoClipToDelete({ wordId, clipId, title: clipTitle });
+    setVideoClipDeleteOpen(true);
+  };
+
+  const confirmDeleteVideoClip = () => {
+    if (!videoClipToDelete) return;
+    const word = words.find((w) => w.id === videoClipToDelete.wordId);
     if (!word) return;
-    const updatedClips = (word.videoClips || []).filter((c) => c.id !== clipId);
-    updateWord(wordId, { videoClips: updatedClips });
+    const updatedClips = (word.videoClips || []).filter((c) => c.id !== videoClipToDelete.clipId);
+    updateWord(videoClipToDelete.wordId, { videoClips: updatedClips });
+    setVideoClipDeleteOpen(false);
+    setVideoClipToDelete(null);
   };
 
   // 播放视频片段
-  const playVideoClip = (videoId: string, timestamp: number) => {
+  const [playingVideo, setPlayingVideo] = useState<{ videoId: string; startTime: number; word: string } | null>(null);
+
+  const playVideoClip = (videoId: string, timestamp: number, wordText: string) => {
     const startTime = Math.max(0, timestamp - 10);
-    const url = `https://www.youtube.com/watch?v=${videoId}&t=${startTime}`;
-    window.open(url, '_blank');
+    setPlayingVideo({ videoId, startTime, word: wordText });
+  };
+
+  const closeVideoModal = () => {
+    setPlayingVideo(null);
   };
 
   const handleDeleteClick = (wordId: string, wordText: string) => {
@@ -549,20 +562,20 @@ const VocabularyList = ({ category }: { category?: string }) => {
                                       variant="ghost"
                                       size="sm"
                                       className="h-7 w-7 p-0"
-                                      onClick={() => playVideoClip(clip.videoId, clip.timestamp)}
+                                      onClick={() => playVideoClip(clip.videoId, clip.timestamp, word.word)}
                                     >
-                                      <Play className="w-3 h-3" />
+                                      <YouTubeIcon className="w-5 h-5" />
                                     </Button>
                                     <span className="truncate">{clip.title}</span>
                                     <Badge variant="outline" className="text-xs flex-shrink-0">
-                                      {clip.timestamp}s
+                                      {formatTime(clip.timestamp)}
                                     </Badge>
                                   </div>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                    onClick={() => handleDeleteVideoClip(word.id, clip.id)}
+                                    onClick={() => handleDeleteVideoClip(word.id, clip.id, clip.title)}
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </Button>
@@ -660,6 +673,27 @@ const VocabularyList = ({ category }: { category?: string }) => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* 删除视频片段确认对话框 */}
+      <AlertDialog open={videoClipDeleteOpen} onOpenChange={setVideoClipDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除视频片段</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除视频片段 <b>{videoClipToDelete?.title}</b> 吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteVideoClip}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* 分类选择对话框 */}
       <AlertDialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
         <AlertDialogContent>
@@ -742,6 +776,17 @@ const VocabularyList = ({ category }: { category?: string }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 视频播放模态框 */}
+      {playingVideo && (
+        <VideoPlayerModal
+          videoId={playingVideo.videoId}
+          startTime={playingVideo.startTime}
+          word={playingVideo.word}
+          open={!!playingVideo}
+          onClose={closeVideoModal}
+        />
+      )}
     </div>
   );
 };

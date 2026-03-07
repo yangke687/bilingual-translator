@@ -32,3 +32,19 @@ export async function getYouTubeTitle(videoId: string): Promise<string> {
     return 'Untitled';
   }
 }
+
+/**
+ * 将分钟和秒转换为秒数
+ */
+export function convertToSeconds(minutes: number, seconds: number): number {
+  return minutes * 60 + seconds;
+}
+
+/**
+ * 将秒数转换为分:秒格式
+ */
+export function formatTime(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
