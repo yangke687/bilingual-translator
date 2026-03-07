@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
-import { type WordDetail } from '@/store/translation-store';
+import { type WordDetail, type VideoClip } from '@/store/translation-store';
 import { fb_loadCategories, fb_addCategory } from '@/hooks/use-vocab';
 import type { DocumentSnapshot } from 'firebase/firestore';
 
@@ -20,6 +20,7 @@ export type Word = WordDetail & {
   createdAt: string;
   category: string;
   notes?: string;
+  videoClips?: VideoClip[];
 };
 
 export type SortFieldType = 'createdAt' | 'word';

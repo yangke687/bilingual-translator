@@ -222,7 +222,7 @@ export const useVocab = () => {
   };
 
   // 生词添加/编辑 "备注" 或更新 "分类"
-  const updateWord = async (wordId: string, updates: { notes?: string; category?: string }) => {
+  const updateWord = async (wordId: string, updates: { notes?: string; category?: string; videoClips?: Word['videoClips'] }) => {
     const wordRef = await doc(db, 'users', user!.uid, 'vocab', wordId);
     await updateDoc(wordRef, updates);
     localUpdateWord(wordId, updates);

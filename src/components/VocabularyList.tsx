@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useVocabStore } from '@/store/vocab-store';
+import { useVocabStore, type Word } from '@/store/vocab-store';
+import type { VideoClip } from '@/store/translation-store';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,11 +34,15 @@ import {
   Copy,
   CheckCircle2,
   X,
+  Play,
+  Plus,
+  Video,
 } from 'lucide-react';
 import { useVocab, fb_loadTotalWordsCnt } from '@/hooks/use-vocab';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { useAuth } from '@/lib/auth-context';
+import { getYouTubeVideoId, getYouTubeTitle } from '@/lib/utils';
 
 const VocabularyList = ({ category }: { category?: string }) => {
   const {
@@ -171,6 +176,69 @@ const VocabularyList = ({ category }: { category?: string }) => {
       setCategoryDialogOpen(false);
       setEditingCategoryWord(null);
     }
+  };
+
+  // 视频片段
+  const [videoClipDialogOpen, setVideoClipDialogOpen] = useState(false);
+  const [videoClipWord, setVideoClipWord] = useState<Word | null>(null);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoMinutes, setVideoMinutes] = useState<number>(0);
+  const [videoSeconds, setVideoSeconds] = useState<number>(0);
+  const [isLoadingTitle, setIsLoadingTitle] = useState(false);
+
+  // 将分和秒转换为总秒数
+  const convertToSeconds = (minutes: number, seconds: number): number => {
+    return minutes * 60 + seconds;
+  };
+
+  // 从 URL 提取 YouTube videoId
+  const handleAddVideoClipClick = (word: Word) => {
+    setVideoClipWord(word);
+    setVideoUrl('');
+    setVideoMinutes(0);
+    setVideoSeconds(0);
+    setVideoClipDialogOpen(true);
+  };
+
+  const handleConfirmAddVideoClip = async () => {
+    if (!videoClipWord || !videoUrl) return;
+
+    const timestamp = convertToSeconds(videoMinutes, videoSeconds);
+    if (timestamp < 0) return;
+
+    const videoId = getYouTubeVideoId(videoUrl);
+    if (!videoId) return;
+
+    setIsLoadingTitle(true);
+    const title = await getYouTubeTitle(videoId);
+    setIsLoadingTitle(false);
+
+    const newClip: VideoClip = {
+      id: Date.now().toString(),
+      videoId,
+      title,
+      timestamp,
+      createdAt: new Date().toISOString(),
+    };
+
+    const currentClips = videoClipWord.videoClips || [];
+    updateWord(videoClipWord.id, { videoClips: [...currentClips, newClip] });
+    setVideoClipDialogOpen(false);
+    setVideoClipWord(null);
+  };
+
+  const handleDeleteVideoClip = (wordId: string, clipId: string) => {
+    const word = words.find((w) => w.id === wordId);
+    if (!word) return;
+    const updatedClips = (word.videoClips || []).filter((c) => c.id !== clipId);
+    updateWord(wordId, { videoClips: updatedClips });
+  };
+
+  // 播放视频片段
+  const playVideoClip = (videoId: string, timestamp: number) => {
+    const startTime = Math.max(0, timestamp - 10);
+    const url = `https://www.youtube.com/watch?v=${videoId}&t=${startTime}`;
+    window.open(url, '_blank');
   };
 
   const handleDeleteClick = (wordId: string, wordText: string) => {
@@ -455,6 +523,55 @@ const VocabularyList = ({ category }: { category?: string }) => {
                           )}
                         </div>
 
+                        {/* 视频片段区域 */}
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Video className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm font-medium text-muted-foreground">视频片段</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleAddVideoClipClick(word)}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          {word.videoClips && word.videoClips.length > 0 && (
+                            <div className="space-y-2">
+                              {word.videoClips.map((clip) => (
+                                <div
+                                  key={clip.id}
+                                  className="flex items-center justify-between bg-muted/30 rounded-md p-2 text-sm"
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0"
+                                      onClick={() => playVideoClip(clip.videoId, clip.timestamp)}
+                                    >
+                                      <Play className="w-3 h-3" />
+                                    </Button>
+                                    <span className="truncate">{clip.title}</span>
+                                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                                      {clip.timestamp}s
+                                    </Badge>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                    onClick={() => handleDeleteVideoClip(word.id, clip.id)}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                         {/* 标签和时间 */}
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
@@ -572,6 +689,56 @@ const VocabularyList = ({ category }: { category?: string }) => {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setCategoryDialogOpen(false)}>取消</AlertDialogCancel>
             <Button onClick={handleConfirmCategoryChange}>确认</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 添加视频片段对话框 */}
+      <AlertDialog open={videoClipDialogOpen} onOpenChange={setVideoClipDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>添加视频片段</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium">YouTube URL</label>
+              <Input
+                placeholder="https://youtube.com/watch?v=..."
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">时间点</label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="分"
+                  value={videoMinutes || ''}
+                  onChange={(e) => setVideoMinutes(parseInt(e.target.value) || 0)}
+                  className="w-20"
+                />
+                <span className="text-muted-foreground">:</span>
+                <Input
+                  type="number"
+                  min="0"
+                  max="59"
+                  placeholder="秒"
+                  value={videoSeconds || ''}
+                  onChange={(e) => setVideoSeconds(parseInt(e.target.value) || 0)}
+                  className="w-20"
+                />
+              </div>
+            </div>
+            {isLoadingTitle && <p className="text-sm text-muted-foreground">正在获取视频标题...</p>}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setVideoClipDialogOpen(false)}>取消</AlertDialogCancel>
+            <Button onClick={handleConfirmAddVideoClip} disabled={!videoUrl || isLoadingTitle}>
+              添加
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

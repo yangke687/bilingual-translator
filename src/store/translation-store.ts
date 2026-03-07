@@ -11,6 +11,14 @@ export interface WordDetail {
   synonyms?: string[]; // 同义词
 }
 
+export interface VideoClip {
+  id: string; // 片段唯一 ID
+  videoId: string; // YouTube 视频 ID
+  title: string; // 视频标题
+  timestamp: number; // 时间点（秒）
+  createdAt: string; // 创建时间
+}
+
 export interface DetailedTranslation {
   basicTranslation: string; // 基础翻译
   words: WordDetail[]; // 单词详细信息
